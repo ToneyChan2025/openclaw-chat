@@ -1,0 +1,77 @@
+name: Build Tauri App
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/openclaw-chat/client/**'
+      - '.github/workflows/build-tauri.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Setup Rust
+      uses: dtolnay/rust-action@stable
+      
+    - name: Install dependencies
+      working-directory: ./projects/openclaw-chat/client
+      run: npm install
+      
+    - name: Install Tauri CLI
+      run: npm install -g @tauri-apps/cli
+      
+    - name: Generate icons
+      working-directory: ./projects/openclaw-chat/client
+      run: |
+        # 创建一个简单的默认图标
+        npx tauri icon --help || true
+        # 如果上面的命令失败，使用备用方案
+        if (!(Test-Path "src-tauri/icons/icon.ico")) {
+          Write-Host "Creating placeholder icons..."
+          # 下载一个默认图标
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/icon.ico" -OutFile "src-tauri/icons/icon.ico"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/icon.icns" -OutFile "src-tauri/icons/icon.icns"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/32x32.png" -OutFile "src-tauri/icons/32x32.png"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/128x128.png" -OutFile "src-tauri/icons/128x128.png"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/128x128@2x.png" -OutFile "src-tauri/icons/128x128@2x.png"
+        }
+      
+    - name: Build Tauri app
+      working-directory: ./projects/openclaw-chat/client
+      run: tauri build
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: openclaw-chat-windows
+        path: |
+          projects/openclaw-chat/client/src-tauri/target/release/*.exe
+          projects/openclaw-chat/client/src-tauri/target/release/bundle/msi/*.msi
+        if-no-files-found: warn
+        
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: OpenClaw Chat v${{ github.run_number }}
+        files: |
+          projects/openclaw-chat/client/src-tauri/target/release/*.exe
+          projects/openclaw-chat/client/src-tauri/target/release/bundle/msi/*.msi
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
