@@ -1,0 +1,38 @@
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"OpenClaw Chat Server 启动中...","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"心跳检测已启动，间隔: 30000ms","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"WebSocket 连接管理器已初始化","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"消息路由器已初始化","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"服务器已启动","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"HTTP 端口: 8080","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"WebSocket: ws://localhost:8080/ws","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"API 接口:","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"  健康检查: GET http://localhost:8080/api/health","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"  文件上传: POST http://localhost:8080/api/upload","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"  文件下载: GET http://localhost:8080/api/download/:filename","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"  文件列表: GET http://localhost:8080/api/files","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"上传目录已准备: ./uploads","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:11"}
+{"level":"info","message":"正在关闭服务器...","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:20"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"OpenClaw Chat Server 启动中...","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"心跳检测已启动，间隔: 30000ms","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"WebSocket 连接管理器已初始化","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"消息路由器已初始化","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"服务器已启动","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"HTTP 端口: 8080","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"WebSocket: ws://localhost:8080/ws","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"API 接口:","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"  健康检查: GET http://localhost:8080/api/health","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"  文件上传: POST http://localhost:8080/api/upload","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"  文件下载: GET http://localhost:8080/api/download/:filename","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"  文件列表: GET http://localhost:8080/api/files","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"==============================================","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"上传目录已准备: ./uploads","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:28"}
+{"level":"info","message":"文件上传成功: 1771109085564-b6xqsyvrt.txt","service":"openclaw-chat-server","timestamp":"2026-02-15 06:44:45"}
