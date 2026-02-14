@@ -1,0 +1,15 @@
+{
+  "name": "personal-diary",
+  "version": "1.0.0",
+  "description": "个人日记系统 - 记录每日生活",
+  "author": "Toney Chan",
+  "triggers": [
+    "个人日记",
+    "写日记",
+    "日记",
+    "开始记录"
+  ],
+  "config": {
+    "diaryDir": "/root/.openclaw/workspace/diary"
+  }
+}
