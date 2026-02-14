@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .message-bubble {
+    @apply rounded-2xl px-4 py-2 max-w-[80%] break-words;
+  }
+  
+  .message-bubble-user {
+    @apply bg-primary-500 text-white rounded-br-none;
+  }
+  
+  .message-bubble-ai {
+    @apply bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm;
+  }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
