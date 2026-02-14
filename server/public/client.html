@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 聊天室</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #00ff88;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.received {
+            background: white;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .message.sent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.system {
+            background: #fff3cd;
+            color: #856404;
+            max-width: 100%;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .message .sender {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .message .time {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-top: 4px;
+        }
+
+        .message .content {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .message.file .content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message.file a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .message.file .file-icon {
+            font-size: 1.5rem;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #eee;
+            border-radius: 24px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-area input:focus {
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .online-users {
+            padding: 10px 20px;
+            background: #f9f9f9;
+            font-size: 0.85rem;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* 滚动条样式 */
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        /* 断线提示 */
+        .reconnect-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .reconnect-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .reconnect-box h3 {
+            margin-bottom: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>WebSocket 聊天室</h1>
+            <div class="status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">连接中...</span>
+            </div>
+        </div>
+
+        <div class="online-users">
+            在线人数: <span id="onlineCount">0</span>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <!-- 消息将在这里显示 -->
+        </div>
+
+        <div class="input-area">
+            <input type="file" id="fileInput" class="file-input">
+            <button class="btn btn-secondary" id="uploadBtn" disabled>
+                📎 文件
+            </button>
+            <input type="text" id="messageInput" placeholder="输入消息..." disabled>
+            <button class="btn btn-primary" id="sendBtn" disabled>
+                发送
+            </button>
+        </div>
+    </div>
+
+    <!-- 重连提示 -->
+    <div class="reconnect-overlay hidden" id="reconnectOverlay">
+        <div class="reconnect-box">
+            <h3>连接已断开</h3>
+            <p>正在尝试重新连接...</p>
+            <p id="reconnectTimer">3</p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * WebSocket 聊天客户端
+         */
+
+        class ChatClient {
+            constructor() {
+                // 配置
+                this.wsUrl = `ws://${location.host}`;
+                this.serverUrl = `http://${location.host}`;
+
+                // DOM 元素
+                this.elements = {
+                    statusDot: document.getElementById('statusDot'),
+                    statusText: document.getElementById('statusText'),
+                    chatArea: document.getElementById('chatArea'),
+                    messageInput: document.getElementById('messageInput'),
+                    sendBtn: document.getElementById('sendBtn'),
+                    uploadBtn: document.getElementById('uploadBtn'),
+                    fileInput: document.getElementById('fileInput'),
+                    onlineCount: document.getElementById('onlineCount'),
+                    reconnectOverlay: document.getElementById('reconnectOverlay'),
+                    reconnectTimer: document.getElementById('reconnectTimer')
+                };
+
+                // 状态
+                this.ws = null;
+                this.connected = false;
+                this.clientId = null;
+                this.username = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.reconnectDelay = 3000;
+
+                // 初始化
+                this.init();
+            }
+
+            /**
+             * 初始化
+             */
+            init() {
+                // 绑定事件
+                this.bindEvents();
+
+                // 连接服务器
+                this.connect();
+            }
+
+            /**
+             * 绑定事件
+             */
+            bindEvents() {
+                // 发送消息
+                this.elements.sendBtn.addEventListener('click', () => {
+                    this.sendMessage();
+                });
+
+                // 回车发送
+                this.elements.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                });
+
+                // 上传文件
+                this.elements.uploadBtn.addEventListener('click', () => {
+                    this.elements.fileInput.click();
+                });
+
+                this.elements.fileInput.addEventListener('change', (e) => {
+                    this.uploadFile(e.target.files[0]);
+                });
+            }
+
+            /**
+             * 连接 WebSocket
+             */
+            connect() {
+                try {
+                    this.updateStatus(false, '连接中...');
+
+                    this.ws = new WebSocket(this.wsUrl);
+
+                    // 连接成功
+                    this.ws.onopen = () => {
+                        console.log('[WebSocket] 连接成功');
+                        this.connected = true;
+                        this.reconnectAttempts = 0;
+                        this.updateStatus(true, '已连接');
+                        this.enableInput(true);
+                        this.hideReconnect();
+                    };
+
+                    // 收到消息
+                    this.ws.onmessage = (event) => {
+                        this.handleMessage(event.data);
+                    };
+
+                    // 连接关闭
+                    this.ws.onclose = (event) => {
+                        console.log('[WebSocket] 连接关闭', event.code, event.reason);
+                        this.connected = false;
+                        this.updateStatus(false, '已断开');
+                        this.enableInput(false);
+                        this.scheduleReconnect();
+                    };
+
+                    // 错误
+                    this.ws.onerror = (error) => {
+                        console.error('[WebSocket] 错误:', error);
+                        this.updateStatus(false, '连接错误');
+                    };
+
+                } catch (error) {
+                    console.error('[WebSocket] 连接失败:', error);
+                    this.scheduleReconnect();
+                }
+            }
+
+            /**
+             * 计划重连
+             */
+            scheduleReconnect() {
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    this.showReconnect('重连失败，请刷新页面');
+                    return;
+                }
+
+                this.reconnectAttempts++;
+                const delay = this.reconnectDelay * this.reconnectAttempts;
+
+                this.showReconnect(`${delay / 1000} 秒后重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+                setTimeout(() => {
+                    this.connect();
+                }, delay);
+            }
+
+            /**
+             * 处理消息
+             */
+            handleMessage(data) {
+                try {
+                    const message = JSON.parse(data);
+                    console.log('[WebSocket] 收到消息:', message);
+
+                    switch (message.type) {
+                        case 'system':
+                            this.handleSystemMessage(message);
+                            break;
+                        case 'chat':
+                            this.displayMessage(message);
+                            break;
+                        case 'file':
+                            this.displayMessage(message);
+                            break;
+                        case 'history':
+                            this.displayHistory(message.content);
+                            break;
+                        case 'heartbeat':
+                            // 心跳响应，忽略
+                            break;
+                        case 'error':
+                            this.showError(message.content.message);
+                            break;
+                    }
+                } catch (error) {
+                    console.error('[WebSocket] 解析消息失败:', error);
+                }
+            }
+
+            /**
+             * 处理系统消息
+             */
+            handleSystemMessage(message) {
+                const content = message.content;
+
+                // 保存客户端 ID
+                if (content.clientId) {
+                    this.clientId = content.clientId;
+                }
+
+                // 更新在线人数
+                if (content.onlineCount !== undefined) {
+                    this.elements.onlineCount.textContent = content.onlineCount;
+                }
+
+                // 显示系统消息
+                this.displayMessage({
+                    type: 'system',
+                    content: { message: content.message }
+                });
+            }
+
+            /**
+             * 显示消息
+             */
+            displayMessage(message) {
+                const div = document.createElement('div');
+                div.className = `message ${message.type}`;
+
+                if (message.type === 'system') {
+                    div.innerHTML = `<div class="content">${message.content.message}</div>`;
+                } else if (message.type === 'file') {
+                    const isSent = message.sender?.id === this.clientId;
+                    div.classList.add(isSent ? 'sent' : 'received');
+                    div.classList.add('file');
+
+                    const fileUrl = `${this.serverUrl}${message.content.url}`;
+                    div.innerHTML = `
+                        <div class="sender">${message.sender?.username || '未知'}</div>
+                        <div class="content">
+                            <span class="file-icon">📄</span>
+                            <a href="${fileUrl}" target="_blank">${message.content.originalName || message.content.filename}</a>
+                        </div>
+                        <div class="time">${this.formatTime(message.timestamp)}</div>
+                    `;
+                } else {
+                    const isSent = message.sender?.id === this.clientId;
+                    div.classList.add(isSent ? 'sent' : 'received');
+                    div.innerHTML = `
+                        <div class="sender">${message.sender?.username || '未知'}</div>
+                        <div class="content">${this.escapeHtml(message.content)}</div>
+                        <div class="time">${this.formatTime(message.timestamp)}</div>
+                    `;
+                }
+
+                this.elements.chatArea.appendChild(div);
+                this.scrollToBottom();
+            }
+
+            /**
+             * 显示历史消息
+             */
+            displayHistory(messages) {
+                messages.forEach(msg => this.displayMessage(msg));
+            }
+
+            /**
+             * 发送消息
+             */
+            sendMessage() {
+                const content = this.elements.messageInput.value.trim();
+                if (!content || !this.connected) return;
+
+                const message = {
+                    type: 'chat',
+                    content: content
+                };
+
+                this.send(message);
+                this.elements.messageInput.value = '';
+            }
+
+            /**
+             * 上传文件
+             */
+            async uploadFile(file) {
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${this.serverUrl}/api/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 发送文件消息
+                        const message = {
+                            type: 'file',
+                            content: result.data
+                        };
+                        this.send(message);
+                    } else {
+                        this.showError(result.error || '上传失败');
+                    }
+                } catch (error) {
+                    console.error('[Upload] 上传失败:', error);
+                    this.showError('文件上传失败');
+                }
+
+                // 清空文件选择
+                this.elements.fileInput.value = '';
+            }
+
+            /**
+             * 发送数据
+             */
+            send(data) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(data));
+                }
+            }
+
+            /**
+             * 更新连接状态
+             */
+            updateStatus(connected, text) {
+                this.elements.statusDot.classList.toggle('connected', connected);
+                this.elements.statusText.textContent = text;
+            }
+
+            /**
+             * 启用/禁用输入
+             */
+            enableInput(enabled) {
+                this.elements.messageInput.disabled = !enabled;
+                this.elements.sendBtn.disabled = !enabled;
+                this.elements.uploadBtn.disabled = !enabled;
+            }
+
+            /**
+             * 显示重连提示
+             */
+            showReconnect(text) {
+                this.elements.reconnectTimer.textContent = text;
+                this.elements.reconnectOverlay.classList.remove('hidden');
+            }
+
+            /**
+             * 隐藏重连提示
+             */
+            hideReconnect() {
+                this.elements.reconnectOverlay.classList.add('hidden');
+            }
+
+            /**
+             * 显示错误
+             */
+            showError(message) {
+                alert(`错误: ${message}`);
+            }
+
+            /**
+             * 滚动到底部
+             */
+            scrollToBottom() {
+                this.elements.chatArea.scrollTop = this.elements.chatArea.scrollHeight;
+            }
+
+            /**
+             * 格式化时间
+             */
+            formatTime(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            /**
+             * HTML 转义
+             */
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // 启动客户端
+        const client = new ChatClient();
+    </script>
+</body>
+</html>
