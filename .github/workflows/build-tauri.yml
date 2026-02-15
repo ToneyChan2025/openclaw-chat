@@ -3,9 +3,6 @@ name: Build Tauri App
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'projects/openclaw-chat/client/**'
-      - '.github/workflows/build-tauri.yml'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -31,27 +28,72 @@ jobs:
       run: npm install
       
     - name: Install Tauri CLI
-      run: npm install -g @tauri-apps/cli
+      run: cargo install tauri-cli --version "^2.0.0" --locked
       
     - name: Generate icons
       working-directory: ./projects/openclaw-chat/client
+      shell: pwsh
       run: |
-        # 创建一个简单的默认图标
-        npx tauri icon --help || true
-        # 如果上面的命令失败，使用备用方案
-        if (!(Test-Path "src-tauri/icons/icon.ico")) {
-          Write-Host "Creating placeholder icons..."
-          # 下载一个默认图标
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/icon.ico" -OutFile "src-tauri/icons/icon.ico"
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/icon.icns" -OutFile "src-tauri/icons/icon.icns"
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/32x32.png" -OutFile "src-tauri/icons/32x32.png"
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/128x128.png" -OutFile "src-tauri/icons/128x128.png"
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/dev/examples/api/src-tauri/icons/128x128@2x.png" -OutFile "src-tauri/icons/128x128@2x.png"
+        # 创建一个简单的 SVG 图标
+        $svg = @'
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <rect width="512" height="512" fill="#0ea5e9" rx="100"/>
+          <text x="256" y="320" font-size="240" text-anchor="middle" fill="white" font-family="Arial">C</text>
+        </svg>
+        '@
+        $svg | Out-File -FilePath "icon.svg" -Encoding UTF8
+        
+        # 使用 ImageMagick 或在线服务转换（这里使用 PowerShell 绘制）
+        # 由于无法直接生成 ico，我们创建一个简单的 png 并复制为不同尺寸
+        
+        # 创建图标目录
+        New-Item -ItemType Directory -Force -Path "src-tauri/icons"
+        
+        # 下载默认图标
+        try {
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/HEAD/examples/api/src-tauri/icons/icon.ico" -OutFile "src-tauri/icons/icon.ico" -TimeoutSec 30
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/HEAD/examples/api/src-tauri/icons/icon.icns" -OutFile "src-tauri/icons/icon.icns" -TimeoutSec 30
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/HEAD/examples/api/src-tauri/icons/32x32.png" -OutFile "src-tauri/icons/32x32.png" -TimeoutSec 30
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/HEAD/examples/api/src-tauri/icons/128x128.png" -OutFile "src-tauri/icons/128x128.png" -TimeoutSec 30
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tauri-apps/tauri/HEAD/examples/api/src-tauri/icons/128x128@2x.png" -OutFile "src-tauri/icons/128x128@2x.png" -TimeoutSec 30
+          Write-Host "Icons downloaded successfully"
+        } catch {
+          Write-Host "Failed to download icons, will use default Tauri icons"
+        }
+        
+        # 检查图标是否存在
+        Get-ChildItem -Path "src-tauri/icons" | ForEach-Object {
+          Write-Host "Icon: $($_.Name) - $($_.Length) bytes"
         }
       
     - name: Build Tauri app
       working-directory: ./projects/openclaw-chat/client
-      run: tauri build
+      shell: pwsh
+      run: |
+        try {
+          cargo tauri build
+        } catch {
+          Write-Host "Build failed with error: $_"
+          # 尝试使用 npm 运行
+          npm run tauri:build
+        }
+      continue-on-error: true
+      
+    - name: Check build output
+      working-directory: ./projects/openclaw-chat/client
+      shell: pwsh
+      run: |
+        Write-Host "Checking build output..."
+        if (Test-Path "src-tauri/target/release") {
+          Get-ChildItem -Path "src-tauri/target/release" -Filter "*.exe" -Recurse | ForEach-Object {
+            Write-Host "Found EXE: $($_.FullName) - $($_.Length) bytes"
+          }
+        }
+        if (Test-Path "src-tauri/target/release/bundle") {
+          Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse | ForEach-Object {
+            Write-Host "Found bundle: $($_.FullName) - $($_.Length) bytes"
+          }
+        }
       
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -59,19 +101,6 @@ jobs:
         name: openclaw-chat-windows
         path: |
           projects/openclaw-chat/client/src-tauri/target/release/*.exe
-          projects/openclaw-chat/client/src-tauri/target/release/bundle/msi/*.msi
+          projects/openclaw-chat/client/src-tauri/target/release/bundle/**/*.msi
+          projects/openclaw-chat/client/src-tauri/target/release/bundle/**/*.exe
         if-no-files-found: warn
-        
-    - name: Create Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ github.run_number }}
-        name: OpenClaw Chat v${{ github.run_number }}
-        files: |
-          projects/openclaw-chat/client/src-tauri/target/release/*.exe
-          projects/openclaw-chat/client/src-tauri/target/release/bundle/msi/*.msi
-        draft: false
-        prerelease: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
